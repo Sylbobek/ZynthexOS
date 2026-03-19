@@ -9,9 +9,16 @@ static size_t terminal_column = 0;
 static unsigned const char default_terminal_color = 0x07;
 static unsigned char terminal_color = default_terminal_color;
 static unsigned short* terminal_buffer = (unsigned short*) 0xB8000;
+static unsigned short back_buffer[VGA_WIDTH * VGA_HEIGHT];
 
 static unsigned short vga_entry(unsigned char uc, unsigned char color) {
     return (unsigned short) uc | (unsigned short) color << 8;
+}
+
+static void vga_flush(void)
+{
+    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+        terminal_buffer[i] = back_buffer[i];
 }
 
 void vga_disable_cursor()
@@ -65,19 +72,20 @@ void vga_scroll()
         {
             for (size_t x = 0; x < VGA_WIDTH; x++)
             {
-                terminal_buffer[(y - 1) * VGA_WIDTH + x] =
-                    terminal_buffer[y * VGA_WIDTH + x];
+                back_buffer[(y - 1) * VGA_WIDTH + x] =
+                    back_buffer[y * VGA_WIDTH + x];
             }
         }
 
         // Clear last line
         for (size_t x = 0; x < VGA_WIDTH; x++)
         {
-            terminal_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + x] =
+            back_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + x] =
                 vga_entry(' ', terminal_color);
         }
 
         terminal_row = VGA_HEIGHT - 1;
+        vga_flush();
     }
 }
 
@@ -106,11 +114,12 @@ void vga_clear() {
     for (size_t y = 0; y < VGA_HEIGHT; y++) {
         for (size_t x = 0; x < VGA_WIDTH; x++) {
             const size_t index = y * VGA_WIDTH + x;
-            terminal_buffer[index] = vga_entry(' ', terminal_color);
+            back_buffer[index] = vga_entry(' ', terminal_color);
         }
     }
     terminal_row = 0;
     terminal_column = 0;
+    vga_flush();
 }
 
 void vga_putchar(char c) {
@@ -143,7 +152,7 @@ void vga_putchar(char c) {
 
 
     const size_t index = terminal_row * VGA_WIDTH + terminal_column;
-    terminal_buffer[index] = vga_entry(c, terminal_color);
+    back_buffer[index] = vga_entry(c, terminal_color);
 
     terminal_column++;
     if (terminal_column >= VGA_WIDTH) {
@@ -151,6 +160,7 @@ void vga_putchar(char c) {
         terminal_row++;
     }
     vga_scroll();
+    vga_flush();
     vga_update_cursor();
 }
 

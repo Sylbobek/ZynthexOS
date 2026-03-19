@@ -631,7 +631,7 @@ static void cmd_help(int argc, char* argv[])
         vga_print("[SYS]\n");
         vga_print(" help      sysfetch   cpuid\n");
         vga_print(" uptime    state      panic\n");
-        vga_print(" dmesg     shutdown   reboot\n");
+        vga_print(" dmesg     doom       shutdown   reboot\n");
         vga_print(" clear\n");
 
         vga_print("\n[MEM]\n");
@@ -660,6 +660,7 @@ static void cmd_help(int argc, char* argv[])
         vga_print(" state\n");
         vga_print(" panic <msg>\n");
         vga_print(" dmesg\n");
+        vga_print(" doom\n");
         vga_print(" shutdown\n");
         vga_print(" reboot\n");
         vga_print(" clear\n");
@@ -777,6 +778,15 @@ static void cmd_dmesg(int argc, char* argv[])
     log_dump();
 }
 
+static void cmd_doom(int argc, char* argv[])
+{
+    (void)argc; (void)argv;
+    vga_print("DOOM placeholder:\n");
+    vga_print(" - Wymaga: framebuffer VBE/GOP, scheduler + syscall, userland, WAD.\n");
+    vga_print(" - Obecnie brak: tryb graficzny i procesy.\n");
+    vga_print(" - Uruchomimy po dodaniu grafiki+userland.\n");
+}
+
 
 static void cmd_state(int argc, char* argv[])
 {
@@ -823,6 +833,7 @@ static command_t commands[] = {
     {"help",  cmd_help},
     {"panic", cmd_panic},
     {"dmesg", cmd_dmesg},
+    {"doom",  cmd_doom},
     {"state", cmd_state},
     {"uptime", cmd_uptime},
     {"cpuid", cmd_cpuid},

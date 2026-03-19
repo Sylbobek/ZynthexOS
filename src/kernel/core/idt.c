@@ -1,6 +1,9 @@
 #include "drivers/keyboard.h"
 #include "drivers/pic.h"
 #include "mm/vm.h"
+#include "mm/pmm.h"
+#include "mm/paging.h"
+#include "sched/sched.h"
 #include "debug.h"
 #include "time.h"
 
@@ -128,11 +131,20 @@ void isr_handler(uint32_t interrupt_number, uint32_t error_code)
     {
         if (interrupt_number == 32)
             timer_tick();
+            scheduler_tick();
 
         if (interrupt_number == 33)
         {
             keyboard_irq_handler();
             pic_send_eoi(1);
+            return;
+        }
+
+        if (interrupt_number == 0x80)  // syscall
+        {
+            // Syscall entry will handle registers and EOI
+            extern void syscall_entry(void);
+            syscall_entry();
             return;
         }
 

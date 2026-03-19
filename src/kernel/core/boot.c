@@ -8,6 +8,10 @@
 #include "core/log.h"
 #include "time.h"
 
+#include "video/framebuffer.h"
+#include "sched/sched.h"
+#include "sys/syscall.h"
+
 #include "drivers/pic.h"
 #include "drivers/pit.h"
 #include "drivers/keyboard.h"
@@ -113,6 +117,8 @@ void kernel_boot(uint32_t multiboot_magic, uint32_t multiboot_addr)
     log_write("boot: kernel_boot start\n");
     multiboot_print_memory(multiboot_addr);                
 
+    framebuffer_init(multiboot_addr);
+
 
     status_begin("Initializing PMM");
 
@@ -146,6 +152,9 @@ void kernel_boot(uint32_t multiboot_magic, uint32_t multiboot_addr)
 
     status_begin("Initializing IDT");
     idt_init();
+    // Set syscall vector 0x80
+    extern void syscall_entry(void);
+    idt_set_gate(0x80, (uint32_t)syscall_entry, 0x08, 0x8E);
     status_end_ok();
 
     status_begin("Remapping PIC");
@@ -157,6 +166,10 @@ void kernel_boot(uint32_t multiboot_magic, uint32_t multiboot_addr)
     status_end_ok();
 
     
+    status_begin("Initializing Scheduler");
+    scheduler_init();
+    status_end_ok();
+
     status_begin("Enabling Interrupts");
     asm volatile("sti");
     status_end_ok();
