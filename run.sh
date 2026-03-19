@@ -1,0 +1,1 @@
+make clean && make && qemu-system-i386 -cdrom build/zynthexos.iso -m 512M -serial stdio
