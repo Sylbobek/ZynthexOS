@@ -6,6 +6,7 @@
 typedef struct {
     int dx;
     int dy;
+    int scroll;      // wheel delta (positive = up)
     uint8_t buttons; // bit0 L, bit1 R, bit2 M
 } mouse_event_t;
 

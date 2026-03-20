@@ -14,6 +14,7 @@
 #include "fs/vfs/vfs.h"
 #include "fs/fd/fd.h"
 #include "core/log.h"
+#include "core/mouse_mode.h"
 
 
 #define MAX_ARGS 8
@@ -80,6 +81,29 @@ static void cmd_cur(int argc, char* argv[])
     }
 }
 
+static void cmd_mouse(int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        vga_print("Usage: mouse <on|off>\n");
+        return;
+    }
+
+    if (strcmp(argv[1], "on") == 0)
+    {
+        mouse_enable(1);
+        vga_print("Mouse: enabled\n");
+    }
+    else if (strcmp(argv[1], "off") == 0)
+    {
+        mouse_enable(0);
+        vga_print("Mouse: disabled\n");
+    }
+    else
+    {
+        vga_print("Usage: mouse <on|off>\n");
+    }
+}
 
 static void cmd_memsummary(int argc, char* argv[])
 {
@@ -862,6 +886,7 @@ static command_t commands[] = {
     {"ls", cmd_ls},
     {"cd", cmd_cd},
     {"cur", cmd_cur},
+    {"mouse", cmd_mouse},
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))

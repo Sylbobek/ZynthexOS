@@ -13,8 +13,9 @@ static mouse_event_t mouse_buffer[MOUSE_BUF_SIZE];
 static uint32_t buf_head = 0;
 static uint32_t buf_tail = 0;
 
-static uint8_t packet[3];
+static uint8_t packet[4];
 static uint8_t packet_index = 0;
+static int has_wheel = 0;
 
 static inline int buffer_empty(void) { return buf_head == buf_tail; }
 static inline int buffer_full(void) { return ((buf_head + 1) % MOUSE_BUF_SIZE) == buf_tail; }
@@ -71,10 +72,28 @@ static uint8_t mouse_read(void)
     return inb(MOUSE_DATA_PORT);
 }
 
+// Try to enable IntelliMouse wheel (4-byte packets). If unsuccessful, we stay at 3-byte.
+static void mouse_enable_wheel_probe(void)
+{
+    // IntelliMouse sequence: Set sample rate 200, 100, 80 -> device ID becomes 3
+    mouse_write(0xF3); mouse_write(200); mouse_read();
+    mouse_write(0xF3); mouse_write(100); mouse_read();
+    mouse_write(0xF3); mouse_write(80);  mouse_read();
+
+    mouse_write(0xF2); // Get device ID
+    uint8_t id = mouse_read();
+    if (id == 3)
+        has_wheel = 1;
+}
+
 static void mouse_set_defaults(void)
 {
     mouse_write(0xF6); // set defaults
     mouse_read();
+
+    has_wheel = 0;
+    mouse_enable_wheel_probe();
+
     mouse_write(0xF4); // enable data reporting
     mouse_read();
 }
@@ -119,7 +138,8 @@ void mouse_irq_handler(void)
     uint8_t data = inb(MOUSE_DATA_PORT);
     packet[packet_index++] = data;
 
-    if (packet_index < 3)
+    uint8_t needed = has_wheel ? 4 : 3;
+    if (packet_index < needed)
     {
         pic_send_eoi(12);
         return;
@@ -130,10 +150,14 @@ void mouse_irq_handler(void)
     // First byte bits: [7]Yovf [6]Xovf [5]Ysign [4]Xsign [3]Always1 [2]M [1]R [0]L
     int dx = (int8_t)packet[1];
     int dy = (int8_t)packet[2];
+    int scroll = 0;
+    if (has_wheel)
+        scroll = (int8_t)packet[3]; // up is positive
 
     mouse_event_t ev = {0};
     ev.dx = dx;
     ev.dy = -dy; // PS/2 y is opposite screen coords
+    ev.scroll = scroll;
     ev.buttons = packet[0] & 0x07;
 
     buffer_push(&ev);

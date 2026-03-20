@@ -4,6 +4,7 @@
 #include "video/cursor.h"
 #include "video/text_cursor.h"
 #include "video/framebuffer.h"
+#include "core/mouse_mode.h"
 
 
 static volatile uint32_t ticks = 0;
@@ -14,10 +15,13 @@ void timer_tick()
     ticks++;
 
     // Update cursor from mouse events (FB cursor if available, otherwise text-mode cursor)
-    if (framebuffer.available)
-        cursor_tick();
-    else
-        text_cursor_tick();
+    if (mouse_is_enabled())
+    {
+        if (framebuffer.available)
+            cursor_tick();
+        else
+            text_cursor_tick();
+    }
 
     if (ticks % 100 == 0) 
     {
