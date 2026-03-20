@@ -2,6 +2,7 @@
 #include "core/multiboot.h"
 #include "core/log.h"
 #include "lib/string.h"
+#include "font8x8.h"
 
 fb_info_t framebuffer = {0};
 
@@ -161,6 +162,120 @@ void framebuffer_clear(uint32_t argb)
         uint8_t* row = base + y * pitch;
         for (uint32_t x = 0; x < framebuffer.width; x++)
             fb_write_pixel(row + x * bpp_bytes, packed, bpp_bytes);
+    }
+}
+
+// Draw single 8x8 character (transparent background)
+void framebuffer_draw_char(uint32_t x, uint32_t y, char c, uint32_t argb)
+{
+    if (!framebuffer.available)
+        return;
+
+    if ((uint32_t)c < 32 || (uint32_t)c > 127)
+        c = '?';
+
+    uint8_t bpp_bytes = framebuffer.bpp / 8;
+    if (bpp_bytes == 0)
+        return;
+
+    uint32_t packed = fb_pack_color(argb);
+    const uint8_t* glyph = font8x8_basic[(uint32_t)c - 32];
+
+    uint8_t* base = fb_target_base();
+    uint32_t pitch = fb_target_pitch();
+
+    for (uint32_t row = 0; row < 8; row++)
+    {
+        uint8_t bits = glyph[row];
+        uint8_t* dst = base + (y + row) * pitch + x * bpp_bytes;
+        for (uint32_t col = 0; col < 8; col++)
+        {
+            if (bits & (1u << (7 - col)))
+                fb_write_pixel(dst + col * bpp_bytes, packed, bpp_bytes);
+        }
+    }
+}
+
+void framebuffer_draw_string(uint32_t x, uint32_t y, const char* str, uint32_t argb)
+{
+    if (!framebuffer.available || str == NULL)
+        return;
+    uint32_t cursor_x = x;
+    while (*str)
+    {
+        if (cursor_x + 8 > framebuffer.width)
+            break;
+        framebuffer_draw_char(cursor_x, y, *str, argb);
+        cursor_x += 8;
+        str++;
+    }
+}
+
+// progress ring using fixed-point sin/cos table (16 steps basis)
+static const int8_t ring_cos[16] = {127,115,90,49,0,-49,-90,-115,-127,-115,-90,-49,0,49,90,115};
+static const int8_t ring_sin[16] = {0,49,90,115,127,115,90,49,0,-49,-90,-115,-127,-115,-90,-49};
+
+void framebuffer_progress_ring(uint32_t cx, uint32_t cy, uint32_t radius, uint32_t steps, uint32_t active, uint32_t color)
+{
+    if (!framebuffer.available || steps == 0)
+        return;
+
+    uint32_t bpp_bytes = framebuffer.bpp / 8;
+    if (bpp_bytes == 0)
+        return;
+
+    uint32_t packed_active = fb_pack_color(color);
+    uint32_t packed_inactive = fb_pack_color(0x00404040);
+
+    uint32_t use_steps = steps > 16 ? 16 : steps;
+    for (uint32_t i = 0; i < use_steps; i++)
+    {
+        int idx = (int)((i * 16) / use_steps) & 15;
+        int dx = (radius * ring_cos[idx]) / 127;
+        int dy = (radius * ring_sin[idx]) / 127;
+        uint32_t px = cx + dx;
+        uint32_t py = cy + dy;
+        uint32_t packed = (i < active) ? packed_active : packed_inactive;
+
+        if (px < framebuffer.width && py < framebuffer.height)
+        {
+            uint8_t* row = fb_target_base() + py * fb_target_pitch();
+            fb_write_pixel(row + px * bpp_bytes, packed, bpp_bytes);
+            // small 3x3 dot for visibility
+            if (px + 1 < framebuffer.width)
+                fb_write_pixel(row + (px + 1) * bpp_bytes, packed, bpp_bytes);
+            if (py + 1 < framebuffer.height)
+            {
+                uint8_t* row2 = fb_target_base() + (py + 1) * fb_target_pitch();
+                fb_write_pixel(row2 + px * bpp_bytes, packed, bpp_bytes);
+            }
+        }
+    }
+}
+
+void framebuffer_test_pattern(void)
+{
+    if (!framebuffer.available)
+        return;
+
+    uint32_t colors[] = {
+        0x00FF0000, // Red
+        0x0000FF00, // Green
+        0x000000FF, // Blue
+        0x00FFFF00, // Yellow
+        0x0000FFFF, // Cyan
+        0x00FF00FF, // Magenta
+        0x00FFFFFF, // White
+        0x00000000  // Black
+    };
+    uint32_t bars = sizeof(colors) / sizeof(colors[0]);
+    uint32_t bar_w = framebuffer.width / bars;
+
+    for (uint32_t i = 0; i < bars; i++)
+    {
+        uint32_t x = i * bar_w;
+        uint32_t w = (i == bars - 1) ? (framebuffer.width - x) : bar_w;
+        framebuffer_fill_rect(x, 0, w, framebuffer.height, colors[i]);
     }
 }
 

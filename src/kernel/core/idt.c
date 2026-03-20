@@ -1,4 +1,5 @@
 #include "drivers/keyboard.h"
+#include "drivers/mouse.h"
 #include "drivers/pic.h"
 #include "mm/vm.h"
 #include "mm/pmm.h"
@@ -137,6 +138,13 @@ void isr_handler(uint32_t interrupt_number, uint32_t error_code)
         {
             keyboard_irq_handler();
             pic_send_eoi(1);
+            return;
+        }
+
+        if (interrupt_number == 44) // IRQ12 mouse
+        {
+            mouse_irq_handler();
+            pic_send_eoi(12);
             return;
         }
 

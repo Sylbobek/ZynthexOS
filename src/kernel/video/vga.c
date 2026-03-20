@@ -27,6 +27,21 @@ void vga_disable_cursor()
     outb(0x3D5, 0x20);
 }
 
+unsigned short vga_read_cell(size_t row, size_t col)
+{
+    if (row >= VGA_HEIGHT || col >= VGA_WIDTH)
+        return 0;
+    return back_buffer[row * VGA_WIDTH + col];
+}
+
+void vga_write_cell(size_t row, size_t col, unsigned short value)
+{
+    if (row >= VGA_HEIGHT || col >= VGA_WIDTH)
+        return;
+    back_buffer[row * VGA_WIDTH + col] = value;
+    terminal_buffer[row * VGA_WIDTH + col] = value;
+}
+
 
 void vga_enable_cursor(uint8_t start, uint8_t end)
 {

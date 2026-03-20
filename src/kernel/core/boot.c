@@ -15,6 +15,8 @@
 #include "drivers/pic.h"
 #include "drivers/pit.h"
 #include "drivers/keyboard.h"
+#include "drivers/mouse.h"
+#include "video/cursor.h"
 
 #include "mm/heap.h"
 #include "mm/paging.h"
@@ -210,6 +212,17 @@ void kernel_boot(uint32_t multiboot_magic, uint32_t multiboot_addr)
     status_begin("Initializing Keyboard");
     keyboard_init();
     status_end_ok();
+
+    status_begin("Initializing Mouse");
+    mouse_init();
+    status_end_ok();
+
+    if (framebuffer.available)
+    {
+        uint32_t cx = framebuffer.width  ? framebuffer.width  / 2 : 0;
+        uint32_t cy = framebuffer.height ? framebuffer.height / 2 : 0;
+        cursor_init(cx, cy, 0x00FFFFFF);
+    }
 
     status_begin("Booting system");
     status_loading_animation(823);

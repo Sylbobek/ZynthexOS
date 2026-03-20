@@ -54,6 +54,16 @@ void framebuffer_flush(void);
 // Copy arbitrary source buffer (e.g., off-screen) to hardware framebuffer directly.
 void framebuffer_present(const uint8_t* src, uint32_t src_pitch);
 
+// Text rendering with 8x8 bitmap font (transparent background).
+void framebuffer_draw_char(uint32_t x, uint32_t y, char c, uint32_t argb);
+void framebuffer_draw_string(uint32_t x, uint32_t y, const char* str, uint32_t argb);
+
+// Small progress ring (Win-style) centered at (cx, cy) with given radius and step count; filled with color.
+void framebuffer_progress_ring(uint32_t cx, uint32_t cy, uint32_t radius, uint32_t steps, uint32_t active, uint32_t color);
+
+// Diagnostic test pattern (color bars) to validate framebuffer output.
+void framebuffer_test_pattern(void);
+
 // Optional: simple demo screen reminiscent of Windows boot background.
 void framebuffer_demo_bootscreen(void);
 

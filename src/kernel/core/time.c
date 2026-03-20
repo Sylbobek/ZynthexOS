@@ -1,6 +1,9 @@
 #include "time.h"
 #include "debug.h"
 #include "video/vga.h"
+#include "video/cursor.h"
+#include "video/text_cursor.h"
+#include "video/framebuffer.h"
 
 
 static volatile uint32_t ticks = 0;
@@ -9,6 +12,12 @@ static volatile uint32_t seconds = 0;
 void timer_tick() 
 {
     ticks++;
+
+    // Update cursor from mouse events (FB cursor if available, otherwise text-mode cursor)
+    if (framebuffer.available)
+        cursor_tick();
+    else
+        text_cursor_tick();
 
     if (ticks % 100 == 0) 
     {

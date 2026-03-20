@@ -16,4 +16,8 @@ void vga_set_cursor(size_t row, size_t col);
 void vga_enable_cursor(uint8_t start, uint8_t end);
 void vga_disable_cursor();
 
+// Direct cell access (character + attribute). Useful for overlays (e.g., mouse cursor in text mode).
+unsigned short vga_read_cell(size_t row, size_t col);
+void vga_write_cell(size_t row, size_t col, unsigned short value);
+
 #endif
