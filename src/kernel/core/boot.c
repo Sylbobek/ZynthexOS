@@ -215,7 +215,15 @@ void kernel_boot(uint32_t multiboot_magic, uint32_t multiboot_addr)
     status_loading_animation(823);
     status_end_ok();
 
-    sleep(1700);
+    if (framebuffer.available)
+    {
+        framebuffer_demo_bootscreen();
+        sleep(1700);
+    }
+    else
+    {
+        sleep(1700);
+    }
 
     vga_clear();
     boot_screen();

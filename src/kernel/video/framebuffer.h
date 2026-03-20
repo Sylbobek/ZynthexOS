@@ -15,6 +15,9 @@ typedef struct {
     uint8_t  red_pos, red_mask;
     uint8_t  green_pos, green_mask;
     uint8_t  blue_pos, blue_mask;
+    // Optional software backbuffer (caller-owned). If set, draw calls target it.
+    uint8_t* backbuffer;
+    uint32_t backbuffer_pitch;
     int      available;
 } fb_info_t;
 
@@ -25,5 +28,33 @@ void framebuffer_init(uint32_t multiboot_addr);
 
 // Fill screen with a solid ARGB color (8:8:8, ignores alpha). No-op if unavailable.
 void framebuffer_clear(uint32_t argb);
+
+// Draw a single pixel if within bounds.
+void framebuffer_putpixel(uint32_t x, uint32_t y, uint32_t argb);
+
+// Fill a rectangle region with a solid color if within bounds.
+void framebuffer_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t argb);
+
+// Fill screen with a vertical gradient (top->bottom).
+void framebuffer_fill_gradient_vert(uint32_t top_argb, uint32_t bottom_argb);
+
+// Draw a line using integer Bresenham.
+void framebuffer_draw_line(int x0, int y0, int x1, int y1, uint32_t argb);
+
+// Simple blit from a linear buffer into the framebuffer.
+void framebuffer_blit(uint32_t dst_x, uint32_t dst_y, uint32_t w, uint32_t h,
+                      const uint8_t* src, uint32_t src_pitch, uint8_t src_bpp);
+
+// Set a caller-provided backbuffer and pitch; drawing uses it until unset (NULL).
+void framebuffer_set_backbuffer(uint8_t* buf, uint32_t pitch);
+
+// Copy current backbuffer to hardware framebuffer; no-op if backbuffer unset.
+void framebuffer_flush(void);
+
+// Copy arbitrary source buffer (e.g., off-screen) to hardware framebuffer directly.
+void framebuffer_present(const uint8_t* src, uint32_t src_pitch);
+
+// Optional: simple demo screen reminiscent of Windows boot background.
+void framebuffer_demo_bootscreen(void);
 
 #endif
